@@ -42,33 +42,34 @@ class App:
         callback_data: dict = filters.chapter_load.parse(callback_data=call.data)
         self.__chapter = callback_data['chapter']
         self.__page = int(callback_data['page'])
+        products = []
+
+        if self.__chapter == 'catalog':
+            products = sql_facade.execute([['SELECT * FROM products', ()]], 'all')
+
+        elif self.__chapter == 'basket':
+            products = sql_facade.execute(
+            [['''
+                SELECT products.* 
+                FROM basket_products
+                INNER JOIN products ON basket_products.product_id = products.id
+                ORDER BY id ASC
+            ''', ()]],
+            'all')
+
+        elif self.__chapter == 'order':
+            # Показывает не заказы, а все продукты во всех заказах
+            products = sql_facade.execute(
+            [['''
+                SELECT products.* 
+                FROM order_products
+                INNER JOIN products ON order_products.product_id = products.id
+                WHERE order_products.user_id = ?
+                ORDER BY id ASC
+            ''', (call.from_user.id,)]],
+            'all')
 
         def create_keyboard() -> None:
-            products = []
-
-            if self.__chapter == 'catalog':
-                products = sql_facade.execute([['SELECT * FROM products', ()]], 'all')
-
-            elif self.__chapter == 'basket':
-                products = sql_facade.execute(
-                    [['''
-                        SELECT products.* 
-                        FROM basket_products
-                        INNER JOIN products ON basket_products.product_id = products.id
-                        ORDER BY id ASC
-                    ''', ()]],
-                    'all')
-
-            elif self.__chapter == 'order':
-                products = sql_facade.execute(
-                    [['''
-                        SELECT products.* 
-                        FROM order_products
-                        INNER JOIN products ON order_products.product_id = products.id
-                        ORDER BY id ASC
-                    ''', ()]],
-                    'all')
-
             page_max = math.floor(len(products) / self.__page_capacity)
 
             self.__keyboard = types.InlineKeyboardMarkup()

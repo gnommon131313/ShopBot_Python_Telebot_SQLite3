@@ -66,6 +66,9 @@ class User:
             bot.send_message(message.chat.id, text="Укажите корректный адрес")
             return
 
+        bot.send_message(chat_id=message.chat.id, text="Заказ успешно оформлен!")
+        bot.send_message(chat_id=message.chat.id, text="Посмотреть свои заказы: menu-order'")
+
         def order_finished() -> None:
             sql_facade.execute([['UPDATE users SET address = ? WHERE id = ?', (message.text, self.id,)]])
 
@@ -79,27 +82,28 @@ class User:
                 [['DELETE FROM basket_products WHERE user_id = ?',
                 (message.from_user.id,)]])
 
-            # Создать заказ
-            sql_facade.execute(
+            # Создать заказ и получить его id
+            order_id = sql_facade.execute(
                 [[f'INSERT OR IGNORE INTO orders (user_id, order_date) VALUES (?, ?)',
-                (message.from_user.id, '2024-11-26')]])
+                (message.from_user.id, '2024-11-26')]], 'id')
 
-            # Получить заказ
-            order = sql_facade.execute(
-                [['SELECT * FROM orders WHERE user_id = ?',
-                (message.from_user.id,)]], 'all')
-
-            print(type(order))
-            print(order[0])
+            print()
+            print(type(order_id), order_id)
+            print(user_basket)
 
             # Поместить под заказ
             for row in user_basket:
-                print(row[1], row[2])
                 sql_facade.execute(
-                    [[f'INSERT OR IGNORE INTO order_products (order_id, product_id, quantity) VALUES (?, ?, ?)',
-                    (order[0], row[1], row[2])]])
+                    [[f'''INSERT OR IGNORE INTO order_products
+                     (order_id, product_id, user_id, quantity) VALUES (?, ?, ?, ?)''',
+                    (order_id, row[1], message.from_user.id, row[3])]])
 
+            def save_on_json() -> None:
+                order = sql_facade.execute(
+                    [['SELECT * FROM orders WHERE user_id = ?',
+                    (message.from_user.id,)]], 'all')
+
+                print(type(order), order)
+
+            save_on_json()
         order_finished()
-
-        bot.send_message(chat_id=message.chat.id, text="Заказ успешно оформлен!")
-        bot.send_message(chat_id=message.chat.id, text="Посмотреть свои заказы: menu-order'")

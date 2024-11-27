@@ -15,6 +15,8 @@ def execute(args: list, get: str = 'one', database = config.DATABASE):
         result = cursor.fetchone()
     elif get == 'all':
         result = cursor.fetchall()
+    elif get == 'id':
+        result = cursor.lastrowid  # Возвращает только id или PRIMARY KEY
 
     conn.commit()
     conn.close()
