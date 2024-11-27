@@ -1,24 +1,16 @@
 from telebot import TeleBot
 from telebot import types
-from tgbot.utils import filters
-from tgbot.database import goods_db , basket_db, order_db
+from tgbot.utils import filters, sql_facade
 import math
 from tgbot.utils import  buttons
-from tgbot import config
-import sqlite3
+
 
 class App:
     def __init__(self) -> None:
-        self.__basket_db = basket_db.Database()
-        self.__order_db = order_db.Database()
         self.__keyboard = types.InlineKeyboardMarkup()
         self.__chapter = ''
         self.__page = 0
         self.__page_capacity = 5
-
-    @property
-    def basket_db(self):
-        return self.__basket_db
 
     def menu_load(self, message: types.Message, bot: TeleBot) -> None:
         def create_keyboard() -> None:
@@ -52,26 +44,42 @@ class App:
         self.__page = int(callback_data['page'])
 
         def create_keyboard() -> None:
-            goods_storage = None
+            products = []
 
             if self.__chapter == 'catalog':
-                goods_storage = goods_db.goods
-            elif self.__chapter == 'basket':
-                goods_storage = self.__basket_db.goods
-            elif self.__chapter == 'order':
-                goods_storage = self.__order_db.order
+                products = sql_facade.execute([['SELECT * FROM products', ()]], 'all')
 
-            page_max = math.floor(len(goods_storage) / self.__page_capacity)
+            elif self.__chapter == 'basket':
+                products = sql_facade.execute(
+                    [['''
+                        SELECT products.* 
+                        FROM basket_products
+                        INNER JOIN products ON basket_products.product_id = products.id
+                        ORDER BY id ASC
+                    ''', ()]],
+                    'all')
+
+            elif self.__chapter == 'order':
+                products = sql_facade.execute(
+                    [['''
+                        SELECT products.* 
+                        FROM order_products
+                        INNER JOIN products ON order_products.product_id = products.id
+                        ORDER BY id ASC
+                    ''', ()]],
+                    'all')
+
+            page_max = math.floor(len(products) / self.__page_capacity)
 
             self.__keyboard = types.InlineKeyboardMarkup()
-            self.__keyboard.row(*buttons.goods(goods_storage, self.__page, self.__page_capacity))
+            self.__keyboard.row(*buttons.products(products, self.__page, self.__page_capacity))
             self.__keyboard.row(
                 buttons.page_switcher(self.__chapter, self.__page, page_max, -1),
                 buttons.info(callback_data['page']),
                 buttons.page_switcher(self.__chapter, self.__page, page_max, +1))
 
             if self.__chapter == 'basket':
-                if len(goods_storage) > 0:
+                if len(products) > 0:
                     self.__keyboard.row(buttons.make_an_order())
 
             self.__keyboard.row(buttons.menu())
@@ -91,25 +99,19 @@ class App:
 
     def product_card_load(self, call: types.CallbackQuery, bot: TeleBot) -> None:
         callback_data: dict = filters.product_card_load.parse(callback_data=call.data)
-        product = next((element for element in goods_db.goods if callback_data['id'] == element['id']), None)
+        product = sql_facade.execute([['SELECT * FROM products WHERE id = ?', (callback_data['id'],)]])
 
         def create_keyboard() -> None:
-            self.__keyboard = buttons.basket_staff(product_id=product['id'], basket_db_goods=self.__basket_db.goods)
+            self.__keyboard = buttons.basket_staff(product_id=product[0], user_id=call.from_user.id)
             self.__keyboard.row(buttons.chapter(self.__chapter, self.__page))
 
         def edit_message() -> None:
             bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
 
-            with open(product['image_path'], 'rb') as photo:
+            with open(product[4], 'rb') as photo:
                 bot.send_photo(chat_id=call.message.chat.id, photo=photo,
-                    caption=f"{product['name']}  =  {product['price']}$",
+                    caption=f"{product[1]}  =  {product[3]}$",
                     reply_markup=self.__keyboard)
 
         create_keyboard()
         edit_message()
-
-    def make_an_order(self, call: types.CallbackQuery, bot: TeleBot) -> None:
-        bot.delete_message(chat_id=call.message.chat.id, message_id=call.message.message_id)
-        bot.send_message(
-            chat_id=call.message.chat.id,
-            text="/order - чтобы оформить заказ")

@@ -1,4 +1,4 @@
-from tgbot.handlers import admin, app, user
+from tgbot.handlers import admin, app, database, user
 from tgbot.utils import filters, states, database_builder
 from tgbot import config
 from telebot import TeleBot
@@ -12,25 +12,30 @@ def register_handlers():
     app_ = app.App()
     user_ = user.User()
 
-    def database_handler() -> None:
-        bot.register_callback_query_handler(
-            app_.basket_db.update, func=None, callback_config=filters.basket_db_update.filter(), pass_bot=True)
-
     def admin_handler() -> None:
         bot.register_message_handler(admin.some_start, commands=['debug'], admin=True, pass_bot=True)
 
     def app_handler() -> None:
         bot.register_message_handler(app_.menu_load, commands=['start'], pass_bot=True)
-        bot.register_callback_query_handler(app_.menu_load_adapter, func=lambda call: call.data == 'menu_load', pass_bot=True)
+        bot.register_callback_query_handler(
+            app_.menu_load_adapter, func=lambda call: call.data == 'menu_load', pass_bot=True)
         bot.register_callback_query_handler(
             app_.chapter_load, func=None, callback_config=filters.chapter_load.filter(), pass_bot=True)
         bot.register_callback_query_handler(
             app_.product_card_load, func=None, callback_config=filters.product_card_load.filter(), pass_bot=True)
-        bot.register_callback_query_handler(app_.make_an_order, func=lambda call: call.data == 'make_an_order', pass_bot=True)
+
+    def database_handler() -> None:
+        bot.register_callback_query_handler(
+            database.insert, func=None, callback_config=filters.db_insert.filter(), pass_bot=True)
+        bot.register_callback_query_handler(
+            database.delete, func=None, callback_config=filters.db_delete.filter(), pass_bot=True)
+        bot.register_callback_query_handler(
+            database.update, func=None, callback_config=filters.db_update.filter(), pass_bot=True)
 
     def user_handler() -> None:
         bot.register_message_handler(user_.cancel, commands=['cancel'], admin=False, pass_bot=True)
-        bot.register_message_handler(user_.make_an_order, commands=['order'], admin=False, pass_bot=True)
+        bot.register_callback_query_handler(
+            user_.make_an_order, func=lambda call: call.data == 'make_an_order', pass_bot=True)
         bot.register_message_handler(
             user_.get_name,
             func=lambda message: bot.get_state(message.from_user.id) == states.User.get_name.name,
@@ -44,9 +49,9 @@ def register_handlers():
             func=lambda message: bot.get_state(message.from_user.id) == states.User.get_address.name,
             admin=False, pass_bot=True)
 
-    database_handler()
     admin_handler()
     app_handler()
+    database_handler()
     user_handler()
 
 register_handlers()

@@ -6,7 +6,13 @@ from tgbot import config
 
 chapter_load = CallbackData('chapter', 'page', prefix='prefix_chapter_load')
 product_card_load = CallbackData('id', prefix='prefix_product_card_load')
-basket_db_update = CallbackData('id', 'toggle', 'quantity', prefix='prefix_basket_db_update')
+db_insert = CallbackData('table', 'parameters', prefix='prefix_db_insert')
+db_delete = CallbackData('table', 'parameters', prefix='prefix_db_delete')
+db_update = CallbackData('table', 'parameters', prefix='prefix_db_update')
+
+def bind(bot: telebot.TeleBot):
+    bot.add_custom_filter(AdminFilter())
+    bot.add_custom_filter(CallbackFilter())
 
 
 class AdminFilter(SimpleCustomFilter):
@@ -21,8 +27,3 @@ class CallbackFilter(AdvancedCustomFilter):
 
     def check(self, call: types.CallbackQuery, callback_filter: CallbackDataFilter):
         return callback_filter.check(query=call)
-
-
-def bind(bot: telebot.TeleBot):
-    bot.add_custom_filter(AdminFilter())
-    bot.add_custom_filter(CallbackFilter())

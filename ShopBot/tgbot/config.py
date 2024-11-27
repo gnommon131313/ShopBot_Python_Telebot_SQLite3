@@ -1,4 +1,6 @@
 TOKEN = 'xxx'
-ADMIN = [113131313, 11111313,]
+ADMIN = [11111111, 22222222,]
 DATABASE = 'shop.db'
-GOODS_IMAGE_PATH = 'tgbot/images/products/'
+
+
+# Оформление заказа
