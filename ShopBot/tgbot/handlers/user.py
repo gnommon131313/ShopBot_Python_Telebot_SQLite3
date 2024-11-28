@@ -69,7 +69,6 @@ class User:
             return
 
         bot.send_message(chat_id=message.chat.id, text="Заказ успешно оформлен!")
-        bot.send_message(chat_id=message.chat.id, text="Посмотреть свои заказы: menu-order'")
 
         def order_finished() -> None:
             sql_facade.execute([['UPDATE users SET address = ? WHERE id = ?', (message.text, self.id,)]])

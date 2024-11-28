@@ -17,8 +17,8 @@ class App:
             self.__keyboard = types.InlineKeyboardMarkup()
             self.__keyboard.row(
                 buttons.chapter('catalog',0),
-                buttons.chapter('basket',0),
-                buttons.chapter('order',0))
+                buttons.chapter('basket',0),)
+                # buttons.chapter('order',0))
 
         def edit_message() -> None:
             if message.text:
