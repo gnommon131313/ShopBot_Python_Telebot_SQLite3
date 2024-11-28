@@ -2,6 +2,8 @@ from telebot import TeleBot
 from telebot import types
 from tgbot.utils import states
 from tgbot.utils import sql_facade
+import json
+import os
 
 
 class User:
@@ -99,11 +101,16 @@ class User:
                     (order_id, row[1], message.from_user.id, row[3])]])
 
             def save_on_json() -> None:
-                order = sql_facade.execute(
+                orders = sql_facade.execute(
                     [['SELECT * FROM orders WHERE user_id = ?',
                     (message.from_user.id,)]], 'all')
 
-                print(type(order), order)
+                orders_str = json.dumps(orders, ensure_ascii=False, indent=4)
+                filename = 'order.json'
+                file = open(filename, 'w', encoding='utf-8')
+                file.write(orders_str)
+
+                print(type(orders), orders)
 
             save_on_json()
         order_finished()
