@@ -89,10 +89,6 @@ class User:
                 [[f'INSERT OR IGNORE INTO orders (user_id, order_date) VALUES (?, ?)',
                 (message.from_user.id, '2024-11-26')]], 'id')
 
-            print()
-            print(type(order_id), order_id)
-            print(user_basket)
-
             # Поместить под заказ
             for row in user_basket:
                 sql_facade.execute(
@@ -106,11 +102,7 @@ class User:
                     (message.from_user.id,)]], 'all')
 
                 orders_str = json.dumps(orders, ensure_ascii=False, indent=4)
-                filename = 'order.json'
-                file = open(filename, 'w', encoding='utf-8')
-                file.write(orders_str)
-
-                print(type(orders), orders)
+                open('order.json', 'w', encoding='utf-8').write(orders_str)
 
             save_on_json()
         order_finished()
